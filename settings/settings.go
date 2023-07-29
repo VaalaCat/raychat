@@ -7,11 +7,12 @@ import (
 )
 
 type RayConfig struct {
-	ClientID     string `env:"CLIENT_ID"`
-	ClientSecret string `env:"CLIENT_SECRET"`
-	Email        string `env:"EMAIL"`
-	Password     string `env:"PASSWORD"`
-	Token        string `env:"TOKEN" env-default:""`
+	ClientID      string `env:"CLIENT_ID"`
+	ClientSecret  string `env:"CLIENT_SECRET"`
+	Email         string `env:"EMAIL"`
+	Password      string `env:"PASSWORD"`
+	Token         string `env:"TOKEN" env-default:""`
+	ExternalToken string `env:"EXTERNAL_TOKEN" env-default:""`
 }
 
 var rayConf RayConfig
@@ -23,6 +24,9 @@ func init() {
 	err := cleanenv.ReadEnv(&rayConf)
 	if err != nil {
 		logrus.Panic("read env error", err)
+	}
+	if rayConf.ExternalToken == "" {
+		logrus.Warn("ExternalToken is empty, skip auth, recommend to set it")
 	}
 }
 
