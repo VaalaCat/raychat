@@ -5,21 +5,33 @@ import (
 	"raychat/settings"
 )
 
-var token string
+var (
+	authInstance *auth.RaycastAuth
+	token        string
+)
 
 func init() {
+	Init()
+}
+
+func Init() {
 	if settings.Get().Token != "" {
 		token = settings.Get().Token
 		return
 	}
-	token = (&auth.RaycastAuth{
+	authInstance = &auth.RaycastAuth{
 		ClientID:     settings.Get().ClientID,
 		ClientSecret: settings.Get().ClientSecret,
 		Email:        settings.Get().Email,
 		Password:     settings.Get().Password,
-	}).Login()
+	}
+	token = authInstance.Login()
 }
 
 func getToken() string {
 	return token
+}
+
+func getAuthInstance() *auth.RaycastAuth {
+	return authInstance
 }

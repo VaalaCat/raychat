@@ -2,6 +2,7 @@ package chat
 
 import (
 	"encoding/json"
+	"raychat/auth"
 	"strings"
 	"time"
 
@@ -15,7 +16,7 @@ type OpenAIRequest struct {
 	Temperature float64         `json:"temperature"`
 }
 
-func (r OpenAIRequest) ToRayChatRequest() RayChatRequest {
+func (r OpenAIRequest) ToRayChatRequest(a *auth.RaycastAuth) RayChatRequest {
 	messages := make([]Message, len(r.Messages))
 	for i, m := range r.Messages {
 		messages[i] = m.ToMessage()
@@ -28,16 +29,20 @@ func (r OpenAIRequest) ToRayChatRequest() RayChatRequest {
 		Debug:             false,
 		Locale:            "en-CN",
 		Provider:          "openai",
-		Model:             r.GetRequestModel(),
+		Model:             r.GetRequestModel(a),
 		Temperature:       r.Temperature,
 		SystemInstruction: "markdown",
 		Messages:          messages,
 	}
 }
 
-func (r OpenAIRequest) GetRequestModel() string {
+func (r OpenAIRequest) GetRequestModel(a *auth.RaycastAuth) string {
 	model := r.Model
-	if !lo.Contains([]string{"gpt-4", "gpt-3.5-turbo"}, r.Model) {
+	supporedModels := []string{}
+	for _, m := range a.LoginResp.User.AiChatModels {
+		supporedModels = append(supporedModels, m.Model)
+	}
+	if !lo.Contains(supporedModels, r.Model) {
 		model = "gpt-3.5-turbo"
 	}
 	return model
@@ -92,7 +97,7 @@ func (r RayChatStreamResponse) ToOpenAISteamResponse(model string) OpenAIStreamR
 		ID:      "chatcmpl-" + generateRandomString(29),
 		Object:  "chat.completion.chunk",
 		Created: int(time.Now().Unix()),
-		Model:   "gpt-3.5-turbo-0613",
+		Model:   model,
 		Choices: []StreamChoices{
 			{
 				Index:        0,

@@ -16,6 +16,7 @@ type RaycastAuth struct {
 	ClientSecret string
 	Email        string
 	Password     string
+	LoginResp    LoginResponse
 }
 
 func (r *RaycastAuth) Login() string {
@@ -83,6 +84,7 @@ func (r *RaycastAuth) stepThree(c *req.Client, email, password string) LoginResp
 		Logger().WithError(err).Panic("login failed, raw response: ", rawResp.String())
 	}
 	Logger().Infof("login success, resp: %+v", resp)
+	r.LoginResp = resp
 	return resp
 }
 

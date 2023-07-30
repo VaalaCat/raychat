@@ -14,7 +14,7 @@ func ChatEndpoint(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	r, err := Cli(getToken()).Chat(originReq.ToRayChatRequest())
+	r, err := Cli(getToken()).Chat(originReq.ToRayChatRequest(getAuthInstance()))
 	if err != nil {
 		panic(err)
 	}
@@ -42,7 +42,7 @@ func ChatEndpoint(c *gin.Context) {
 			continue
 		}
 		rayChatResp := RayChatStreamResponse{}.FromEventString(event)
-		openAIResp := rayChatResp.ToOpenAISteamResponse(originReq.GetRequestModel())
+		openAIResp := rayChatResp.ToOpenAISteamResponse(originReq.GetRequestModel(getAuthInstance()))
 		eventResp := openAIResp.ToEventString()
 		_, err := c.Writer.WriteString(eventResp + "\n")
 		if err != nil {
