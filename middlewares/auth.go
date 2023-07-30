@@ -5,10 +5,11 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/samber/lo"
 )
 
 func Auth(c *gin.Context) {
-	if settings.Get().ExternalToken == "" {
+	if len(settings.Get().ExternalToken) == 0 {
 		c.Next()
 		return
 	}
@@ -20,7 +21,7 @@ func Auth(c *gin.Context) {
 		return
 	}
 	token := tokenStrlist[1]
-	if token != settings.Get().ExternalToken {
+	if !lo.Contains(settings.Get().ExternalToken, token) {
 		c.AbortWithStatusJSON(401, gin.H{"message": "Unauthorized"})
 		return
 	}
