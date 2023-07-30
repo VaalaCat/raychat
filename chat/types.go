@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"strings"
 	"time"
+
+	"github.com/samber/lo"
 )
 
 type OpenAIRequest struct {
@@ -21,15 +23,24 @@ func (r OpenAIRequest) ToRayChatRequest() RayChatRequest {
 	if r.Temperature == 0 {
 		r.Temperature = 1
 	}
+
 	return RayChatRequest{
 		Debug:             false,
 		Locale:            "en-CN",
 		Provider:          "openai",
-		Model:             r.Model,
+		Model:             r.GetRequestModel(),
 		Temperature:       r.Temperature,
 		SystemInstruction: "markdown",
 		Messages:          messages,
 	}
+}
+
+func (r OpenAIRequest) GetRequestModel() string {
+	model := r.Model
+	if !lo.Contains([]string{"gpt-4", "gpt-3.5-turbo"}, r.Model) {
+		model = "gpt-3.5-turbo"
+	}
+	return model
 }
 
 type RayChatRequest struct {
@@ -75,7 +86,7 @@ func (r RayChatStreamResponse) FromEventString(origin string) RayChatStreamRespo
 	return r
 }
 
-func (r RayChatStreamResponse) ToOpenAISteamResponse() OpenAIStreamResponse {
+func (r RayChatStreamResponse) ToOpenAISteamResponse(model string) OpenAIStreamResponse {
 
 	resp := OpenAIStreamResponse{
 		ID:      "chatcmpl-" + generateRandomString(29),

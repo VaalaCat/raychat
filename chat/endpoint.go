@@ -42,7 +42,7 @@ func ChatEndpoint(c *gin.Context) {
 			continue
 		}
 		rayChatResp := RayChatStreamResponse{}.FromEventString(event)
-		openAIResp := rayChatResp.ToOpenAISteamResponse()
+		openAIResp := rayChatResp.ToOpenAISteamResponse(originReq.GetRequestModel())
 		eventResp := openAIResp.ToEventString()
 		_, err := c.Writer.WriteString(eventResp + "\n")
 		if err != nil {
