@@ -10,10 +10,10 @@ import (
 
 func Run() {
 	r := gin.Default()
-	v1 := r.Group("/v1", middlewares.Auth)
+	v1 := r.Group("/v1")
 	{
 		v1.GET("/models", models.GetModelsEndpoint)
-		v1.POST("/chat/completions", chat.ChatEndpoint)
+		v1.POST("/chat/completions", middlewares.Auth, chat.ChatEndpoint)
 		v1.OPTIONS("/chat/completions", OptionsHandler)
 	}
 	r.Run(":8080")
