@@ -17,9 +17,9 @@ type OpenAIRequest struct {
 }
 
 func (r OpenAIRequest) ToRayChatRequest(a *auth.RaycastAuth) RayChatRequest {
-	messages := make([]Message, len(r.Messages))
+	messages := make([]RayChatMessage, len(r.Messages))
 	for i, m := range r.Messages {
-		messages[i] = m.ToMessage()
+		messages[i] = m.ToRayChatMessage()
 	}
 	if r.Temperature == 0 {
 		r.Temperature = 1
@@ -49,25 +49,25 @@ func (r OpenAIRequest) GetRequestModel(a *auth.RaycastAuth) string {
 }
 
 type RayChatRequest struct {
-	Debug             bool      `json:"debug"`
-	Locale            string    `json:"locale"`
-	Messages          []Message `json:"messages"`
-	Provider          string    `json:"provider"`
-	Model             string    `json:"model"`
-	Temperature       float64   `json:"temperature"`
-	SystemInstruction string    `json:"system_instruction"`
+	Debug             bool             `json:"debug"`
+	Locale            string           `json:"locale"`
+	Messages          []RayChatMessage `json:"messages"`
+	Provider          string           `json:"provider"`
+	Model             string           `json:"model"`
+	Temperature       float64          `json:"temperature"`
+	SystemInstruction string           `json:"system_instruction"`
 }
 
 type Content struct {
 	Text string `json:"text"`
 }
 
-type Message struct {
+type RayChatMessage struct {
 	Content Content `json:"content"`
 	Author  string  `json:"author"`
 }
 
-func (m Message) ToOpenAIMessage() OpenAIMessage {
+func (m RayChatMessage) ToOpenAIMessage() OpenAIMessage {
 	return OpenAIMessage{
 		Role:    m.Author,
 		Content: m.Content.Text,
@@ -114,6 +114,35 @@ func (r RayChatStreamResponse) ToOpenAISteamResponse(model string) OpenAIStreamR
 	return resp
 }
 
+type RayChatStreamResponses []RayChatStreamResponse
+
+func (r RayChatStreamResponses) ToOpenAIResponse(model string) OpenAIResponse {
+	content := ""
+	for _, resp := range r {
+		content += resp.Text
+	}
+	return OpenAIResponse{
+		ID:      "chatcmpl-" + generateRandomString(29),
+		Object:  "chat.completion",
+		Created: int(time.Now().Unix()),
+		Choices: []Choices{
+			{
+				Index: 0,
+				Message: OpenAIMessage{
+					Role:    "assistant",
+					Content: content,
+				},
+				FinishReason: lo.ToPtr("stop"),
+			},
+		},
+		Usage: Usage{
+			PromptTokens:     0,
+			CompletionTokens: 0,
+			TotalTokens:      0,
+		},
+	}
+}
+
 type OpenAIResponse struct {
 	ID      string    `json:"id"`
 	Object  string    `json:"object"`
@@ -135,12 +164,12 @@ type OpenAIMessage struct {
 	Content string `json:"content"`
 }
 
-func (m OpenAIMessage) ToMessage() Message {
+func (m OpenAIMessage) ToRayChatMessage() RayChatMessage {
 	role := m.Role
 	if m.Role == "system" {
-		role = "assistant"
+		role = "user"
 	}
-	return Message{
+	return RayChatMessage{
 		Content: Content{
 			Text: m.Content,
 		},
