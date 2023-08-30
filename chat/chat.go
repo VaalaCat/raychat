@@ -39,8 +39,8 @@ func (r *RayChat) Chat(request RayChatRequest) (*http.Response, error) {
 	req.Header.Add("Authorization", "Bearer "+r.Token)
 
 	res, err := client.Do(req)
-	if err != nil {
-		return nil, err
+	if err != nil || res.StatusCode != http.StatusOK {
+		return res, err
 	}
 
 	return res, nil

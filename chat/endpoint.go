@@ -2,6 +2,7 @@ package chat
 
 import (
 	"bufio"
+	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -15,8 +16,11 @@ func ChatEndpoint(c *gin.Context) {
 		return
 	}
 	r, err := Cli(getToken()).Chat(originReq.ToRayChatRequest(getAuthInstance()))
-	if err != nil {
-		panic(err)
+	if err != nil || r.StatusCode != http.StatusOK {
+		data, err := io.ReadAll(r.Body)
+		logrus.WithError(err).Errorf("request to raycast error, request: %+v, body: %+v", r, string(data))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "request to raycast error", "code": 400})
+		return
 	}
 	switch originReq.Stream {
 	case true:
