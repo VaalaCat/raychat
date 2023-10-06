@@ -17,7 +17,7 @@ docker run -dit --name raychat \
 	-e PASSWORD='your_password' \
 	-e CLIENT_ID='your_client_id' \
 	-e CLIENT_SECRET='your_client_secret' \
-	-e EXTERNAL_TOKEN='your_fake_openai_token' \
+	-e EXTERNAL_TOKEN='your_fake_openai_token' \ # you can provide multi token like "token_a,token_b", token splitted with comma
 	--restart always \
 	vaalacat/raychat:latest
 ```
@@ -28,7 +28,7 @@ or if you already have a token, you can run this command
 docker run -dit --name raychat \
 	-p 8080:8080 \
 	-e TOKEN='your_token' \
-	-e EXTERNAL_TOKEN='your_fake_openai_token' \
+	-e EXTERNAL_TOKEN='your_fake_openai_token' \ # you can provide multi token like "token_a,token_b", token splitted with comma
 	--restart always \
 	vaalacat/raychat:latest
 ```
