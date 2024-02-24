@@ -17,15 +17,18 @@ type OpenAIRequest struct {
 }
 
 func (r OpenAIRequest) ToRayChatRequest(a *auth.RaycastAuth) RayChatRequest {
-	messages := make([]RayChatMessage, len(r.Messages))
-	for i, m := range r.Messages {
-		messages[i] = m.ToRayChatMessage()
+	messages := make([]RayChatMessage, 0, len(r.Messages))
+	for _, m := range r.Messages {
+		if m.Role == "system" {
+			continue
+		}
+		messages = append(messages, m.ToRayChatMessage())
 	}
 	if r.Temperature == 0 {
 		r.Temperature = 1
 	}
 
-	return RayChatRequest{
+	resp := RayChatRequest{
 		Debug:             false,
 		Locale:            "en-CN",
 		Provider:          "openai",
@@ -34,6 +37,13 @@ func (r OpenAIRequest) ToRayChatRequest(a *auth.RaycastAuth) RayChatRequest {
 		SystemInstruction: "markdown",
 		Messages:          messages,
 	}
+
+	additionalSystemInstructions := r.GetSystemMessage().Content
+	if additionalSystemInstructions != "" {
+		resp.AdditionalSystemInstructions = additionalSystemInstructions
+	}
+
+	return resp
 }
 
 func (r OpenAIRequest) GetRequestModel(a *auth.RaycastAuth) string {
@@ -42,20 +52,48 @@ func (r OpenAIRequest) GetRequestModel(a *auth.RaycastAuth) string {
 	for _, m := range a.LoginResp.User.AiChatModels {
 		supporedModels = append(supporedModels, m.Model)
 	}
+	if a.LoginResp.User.EligibleForGpt4 {
+		supporedModels = append(supporedModels, "gpt-4")
+	}
 	if !lo.Contains(supporedModels, r.Model) {
 		model = "gpt-3.5-turbo"
 	}
 	return model
 }
 
+func (r OpenAIRequest) GetSystemMessage() OpenAIMessage {
+	additionalSystem := ""
+	for _, m := range r.Messages {
+		if m.Role == "system" {
+			additionalSystem += m.Content
+		}
+	}
+	return OpenAIMessage{
+		Role:    "system",
+		Content: additionalSystem,
+	}
+}
+
+func (r OpenAIRequest) GetNoneSystemMessage() []OpenAIMessage {
+	msgs := []OpenAIMessage{}
+	for _, m := range r.Messages {
+		if m.Role != "system" {
+			msgs = append(msgs, m)
+		}
+	}
+	return msgs
+}
+
 type RayChatRequest struct {
-	Debug             bool             `json:"debug"`
-	Locale            string           `json:"locale"`
-	Messages          []RayChatMessage `json:"messages"`
-	Provider          string           `json:"provider"`
-	Model             string           `json:"model"`
-	Temperature       float64          `json:"temperature"`
-	SystemInstruction string           `json:"system_instruction"`
+	Debug                        bool             `json:"debug"`
+	Locale                       string           `json:"locale"`
+	Messages                     []RayChatMessage `json:"messages"`
+	Source                       string           `json:"source"`
+	Provider                     string           `json:"provider"`
+	Model                        string           `json:"model"`
+	Temperature                  float64          `json:"temperature"`
+	SystemInstruction            string           `json:"system_instruction"`
+	AdditionalSystemInstructions string           `json:"additional_system_instructions,omitempty"`
 }
 
 type Content struct {

@@ -1,4 +1,4 @@
-FROM golang:1.20-alpine AS builder
+FROM golang:1.21-alpine AS builder
 
 ENV GOPROXY=https://goproxy.cn,direct
 
@@ -8,7 +8,7 @@ COPY . .
 
 RUN go build -o raychat .
 
-FROM golang:1.20-alpine AS runner
+FROM golang:1.21-alpine AS runner
 
 WORKDIR /app
 
