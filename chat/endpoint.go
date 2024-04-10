@@ -32,6 +32,9 @@ func ChatEndpoint(c *gin.Context) {
 
 func plainResp(c *gin.Context, req *OpenAIRequest, resp *http.Response) {
 	defer resp.Body.Close()
+
+	model, _ := req.GetRequestModel(getAuthInstance())
+
 	rayChatResps := *new(RayChatStreamResponses)
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
@@ -46,7 +49,7 @@ func plainResp(c *gin.Context, req *OpenAIRequest, resp *http.Response) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": scanner.Err().Error()})
 		return
 	}
-	openaiResp := rayChatResps.ToOpenAIResponse(req.GetRequestModel(getAuthInstance()))
+	openaiResp := rayChatResps.ToOpenAIResponse(model)
 	c.JSON(http.StatusOK, openaiResp)
 }
 
@@ -66,6 +69,8 @@ func streamResp(c *gin.Context, req *OpenAIRequest, resp *http.Response) {
 		resp.Body.Close()
 	}()
 
+	model, _ := req.GetRequestModel(getAuthInstance())
+
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
 		event := scanner.Text()
@@ -75,7 +80,7 @@ func streamResp(c *gin.Context, req *OpenAIRequest, resp *http.Response) {
 			continue
 		}
 		rayChatResp := RayChatStreamResponse{}.FromEventString(event)
-		openAIResp := rayChatResp.ToOpenAISteamResponse(req.GetRequestModel(getAuthInstance()))
+		openAIResp := rayChatResp.ToOpenAISteamResponse(model)
 		eventResp := openAIResp.ToEventString()
 		_, err := c.Writer.WriteString(eventResp + "\n")
 		if err != nil {

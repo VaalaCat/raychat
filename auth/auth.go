@@ -83,7 +83,7 @@ func (r *RaycastAuth) stepThree(c *req.Client, email, password string) LoginResp
 	if err != nil {
 		Logger().WithError(err).Panic("login failed, raw response: ", rawResp.String())
 	}
-	Logger().Infof("login success, resp: %+v", resp)
+	Logger().Infof("login success, resp: %+v", rawResp.String())
 	r.LoginResp = resp
 	return resp
 }

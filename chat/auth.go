@@ -8,13 +8,15 @@ import (
 var (
 	authInstance *auth.RaycastAuth
 	token        string
+	models       map[string]string
 )
 
 func init() {
-	Init()
+	initAuth()
+	initModels()
 }
 
-func Init() {
+func initAuth() {
 	if settings.Get().Token != "" {
 		token = settings.Get().Token
 		return
@@ -26,6 +28,10 @@ func Init() {
 		Password:     settings.Get().Password,
 	}
 	token = authInstance.Login()
+}
+
+func initModels() {
+	models = Cli(getToken()).GetSupportedModels()
 }
 
 func getToken() string {

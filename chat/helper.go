@@ -3,6 +3,8 @@ package chat
 import (
 	"crypto/rand"
 	"math/big"
+
+	"github.com/sirupsen/logrus"
 )
 
 var charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -14,4 +16,8 @@ func generateRandomString(length int) string {
 		b[i] = charset[n.Int64()]
 	}
 	return string(b)
+}
+
+func Logger() *logrus.Entry {
+	return logrus.WithField("prefix", "chat")
 }

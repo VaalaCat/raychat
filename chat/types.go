@@ -28,11 +28,13 @@ func (r OpenAIRequest) ToRayChatRequest(a *auth.RaycastAuth) RayChatRequest {
 		r.Temperature = 1
 	}
 
+	model, provider := r.GetRequestModel(a)
+
 	resp := RayChatRequest{
 		Debug:             false,
 		Locale:            "en-CN",
-		Provider:          "openai",
-		Model:             r.GetRequestModel(a),
+		Provider:          provider,
+		Model:             model,
 		Temperature:       r.Temperature,
 		SystemInstruction: "markdown",
 		Messages:          messages,
@@ -46,19 +48,20 @@ func (r OpenAIRequest) ToRayChatRequest(a *auth.RaycastAuth) RayChatRequest {
 	return resp
 }
 
-func (r OpenAIRequest) GetRequestModel(a *auth.RaycastAuth) string {
+func (r OpenAIRequest) GetRequestModel(a *auth.RaycastAuth) (string, string) {
 	model := r.Model
-	supporedModels := []string{}
+	supporedModels := lo.Keys(models)
 	for _, m := range a.LoginResp.User.AiChatModels {
 		supporedModels = append(supporedModels, m.Model)
 	}
 	if a.LoginResp.User.EligibleForGpt4 {
 		supporedModels = append(supporedModels, "gpt-4")
 	}
+
 	if !lo.Contains(supporedModels, r.Model) {
 		model = "gpt-3.5-turbo"
 	}
-	return model
+	return model, models[model]
 }
 
 func (r OpenAIRequest) GetSystemMessage() OpenAIMessage {
@@ -113,8 +116,9 @@ func (m RayChatMessage) ToOpenAIMessage() OpenAIMessage {
 }
 
 type RayChatStreamResponse struct {
-	Text         string  `json:"text"`
-	FinishReason *string `json:"finish_reason"`
+	Text         string      `json:"text"`
+	FinishReason *string     `json:"finish_reason"`
+	Err          interface{} `json:"error"`
 }
 
 func (r RayChatStreamResponse) FromEventString(origin string) RayChatStreamResponse {
@@ -125,6 +129,10 @@ func (r RayChatStreamResponse) FromEventString(origin string) RayChatStreamRespo
 	err := json.Unmarshal([]byte(selection), &r)
 	if err != nil {
 		panic(err)
+	}
+	if strings.Contains(selection, "error") {
+		Logger().WithError(err).Errorf("request to raycast error, body: %+v", origin)
+		return RayChatStreamResponse{}
 	}
 	return r
 }
@@ -251,4 +259,45 @@ type StreamChoices struct {
 	Index        int     `json:"index"`
 	Delta        Delta   `json:"delta"`
 	FinishReason *string `json:"finish_reason"`
+}
+
+type GetAIInfoResponse struct {
+	Models        []ModelInfo `json:"models"`
+	DefaultModels struct {
+		Chat        string `json:"chat"`
+		QuickAi     string `json:"quick_ai"`
+		Commands    string `json:"commands"`
+		API         string `json:"api"`
+		EmojiSearch string `json:"emoji_search"`
+	} `json:"default_models"`
+}
+
+func (m GetAIInfoResponse) SupporedModels() map[string]string {
+	models := map[string]string{}
+	for _, model := range m.Models {
+		models[model.Model] = model.Provider
+	}
+	return models
+}
+
+type ModelInfo struct {
+	ID                     string   `json:"id"`
+	Name                   string   `json:"name"`
+	Description            string   `json:"description"`
+	Status                 any      `json:"status"`
+	Features               []string `json:"features"`
+	Suggestions            []any    `json:"suggestions"`
+	InBetterAiSubscription bool     `json:"in_better_ai_subscription"`
+	Model                  string   `json:"model"`
+	Provider               string   `json:"provider"`
+	ProviderName           string   `json:"provider_name"`
+	ProviderBrand          string   `json:"provider_brand"`
+	Speed                  int      `json:"speed"`
+	Intelligence           int      `json:"intelligence"`
+	RequiresBetterAi       bool     `json:"requires_better_ai"`
+	Context                int      `json:"context"`
+	Capabilities           struct {
+		WebSearch       string `json:"web_search,omitempty"`
+		ImageGeneration string `json:"image_generation,omitempty"`
+	} `json:"capabilities,omitempty"`
 }
